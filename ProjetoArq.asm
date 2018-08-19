@@ -3,9 +3,17 @@
 Cadastrar:      .asciiz "1. para cadastrar abastecimento;\n"
 Excluir:        .asciiz "2. para excluir abastecimento;\n"
 EAbastecimento: .asciiz "3. para exibir abastecimento;\n"
-EConsumoMedio:  .asciiz "4. para consumo médio;\n"
-EPrecoMedio:    .asciiz "5. para preço médio;\n\n"
-DigiteOpcao:    .asciiz "Digite a opção desejada: "
+EConsumoMedio:  .asciiz "4. para consumo mÃ©dio;\n"
+EPrecoMedio:    .asciiz "5. para preÃ§o mÃ©dio;\n\n"
+DigiteOpcao:    .asciiz "Digite a opÃ§Ã£o desejada: "
+
+Ins_Dia:	.asciiz "Insira o dia do abastecimento: "
+Ins_Mes:	.asciiz "Insira o mes do abastecimento: "
+Ins_Ano:	.asciiz "Insira o ano do abastecimento: "
+Ins_Nome:	.asciiz "Insira o nome do posto: "
+Ins_Qlmt:	.asciiz "Insira a quilometragem do carro: "
+Ins_Qntd:	.asciiz "Insira a quantidade de combustivel: "
+Ins_Prec:	.asciiz "Insira o preco por litro: "
 
 .text
 #------------ Exibir Menu ------------#
@@ -31,7 +39,7 @@ Menu:
 
 #------------ Exibir Menu ------------#	
 
-#--------- Opção Selecionada ---------#		
+#--------- OpÃ§Ã£o Selecionada ---------#		
 	li $v0, 5
 	syscall
 	
@@ -52,7 +60,7 @@ Menu:
 	
 	j Menu
 	
-#--------- Opção Selecionada ---------#	
+#--------- OpÃ§Ã£o Selecionada ---------#	
 	
 #------ Cadastro Abastecimento -------#	
 Cadastro:
@@ -74,8 +82,35 @@ EConsumo:
 EMedio:
 #-------- Exibe Preco Medio ----------#	
 
+#------ Converte Data para EPOCH -----#
+DateToEpoch: #DD em $a0 - MM em $a1 - AAAA em $a2
+	addi $t1, $a1, -1 # Janeiro Ã© mes 1
+	mul  $t1, $t1, 30
 	
+	addi $t2, $a2, -2000 # EPOCH em 2000
+	mul  $t2, $t2, 360
 	
+	add  $v0, $t2, $t1
+	add  $v0, $v0, $a0 # Result em $v0
 	
+	jr $ra
+#------ Converte Data para EPOCH -----#
 	
+#------ Converte EPOCH para Data -----#
+EpochToDate: #EPOCH em $v0
+	div  $a2, $v0, 360 # Parte inteira em $a2 (ano)
+	mul  $t0, $a2, 360
+	sub  $t0, $v0, $t0 # Resto em $t0 (mes e dia)
+
+	div  $a1, $t0, 30 # parte inteira em $a1 (mes)
+	mul  $t1, $a1, 30
+	sub  $a0, $t0, $t1 # Resto em $a0 (dia)
+
+	addi $a2, $a2, 2000 # EPOCH em 2000
+	addi $a1, $a1, 1 # Janeiro Ã© mes 1
+	
+	jr $ra
+#------ Converte EPOCH para Data -----#
+	
+Exit:
 	
