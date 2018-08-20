@@ -20,6 +20,8 @@ Ins_Qntd:	.asciiz "Insira a quantidade de combustivel: "
 Ins_Prec:	.asciiz "Insira o preco por litro: "
 
 SemReg:		.asciiz "Não há registro de abastecimento, retornando ao menu...\n"
+
+Ex_Qlmt:	.asciiz "Quilometragem: "
 .text
 #----------- Inicializando -----------#
 	and $s7,$s7,$zero	#"Seta" $s7 para 0 pois este contar� quantos cadastros foram feitos	
@@ -63,7 +65,6 @@ Menu:
 #------ Cadastro Abastecimento -------#	
 Cadastro:
 	jal RData	
-	jal DateToEpoch 
 	add $t1,$zero,$v0 # $t1 det�m do valor da EPOCH
 	
 	li $v0,4	#Recebe Nome do Posto no Addr. ReadString
@@ -87,6 +88,7 @@ Cadastro:
 	li $v0,5
 	syscall
 	sll $v0,$v0,16
+	add $t3,$zero,$t1
 	or $t1,$t1,$v0
 	
 	li $v0,4	#Recebe Pre�o do litro em $f0
@@ -96,6 +98,27 @@ Cadastro:
 	syscall
 	
 	la $s4,ReadString
+	
+	beq $s7,$zero,InserePilha
+	add $fp,$zero,$sp
+	lh $t2,0($fp)
+	ble $t3,$t2,InserePilha
+	addi $fp,$fp,28
+ProximaCelula:
+	lh $t2,0($fp)
+	addi $t4,$zero,7
+	ble $t3,$t2,DeslocaCelula
+	j InserePilha
+	
+DeslocaCelula:
+	lw $t5,0($fp)
+	sw $t5,-28($fp)
+	addi $fp,$fp,4
+	addi $t4,$t4,-1
+	bne $t4,$zero,DeslocaCelula
+	j ProximaCelula
+	
+InserePilha:	
 	addi $sp,$sp,-28
 	
 	sw $t1,0($sp)	#Data e Qtd Comb. OK
@@ -120,7 +143,6 @@ StoreWord:		#Nome do Posto
 #-------- Excluir Abstecimento -------#	
 Exclui:
 	jal RData
-	jal DateToEpoch
 	bne $s7,$zero,ExcluiRealmente
 	li $v0,4
 	la $a0,SemReg
@@ -132,7 +154,26 @@ ExcluiRealmente:
 #-------- Excluir Abstecimento -------#	
 
 #--------- Exibe Abastecimento -------#	
-EAbastece:
+EAbastece: # FORMAT <DD>/<MM>/<AAAA> | <INT>Km | <INT> litros (<FLOAT> R$/l) | Posto <posto>
+	jal RData
+	addi $t0, $sp, -28
+TryNxt:	addi $t0, $t0, 28
+	lw  $t1, 0($t0)
+	sll $t1, $t1, 16
+	srl $t1, $t1, 16 # Crop EPOCH data
+	bne $v0, $t0, TryNxt 
+	
+	li  $v0, 4
+	la  $a0, Ex_Qlmt
+	syscall
+	li  $v0, 1
+	lw  $a0, 8($s0)
+	syscall
+	
+	j Menu
+No_Val:	
+	
+	j Menu
 #--------- Exibe Abastecimento -------#	
 
 #---------- Exibe Consumo ------------#	
@@ -194,6 +235,10 @@ RData:
 	li $v0,5
 	syscall
 	add $t5,$zero,$v0
+	
+	add $a0,$zero,$t7
+	add $a1,$zero,$t6
+	add $a2,$zero,$t5
 	
 	add $t4,$zero,$ra
 	jal DateToEpoch
