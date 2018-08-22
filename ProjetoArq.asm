@@ -1,7 +1,6 @@
 .data
 ReadString:	.space 	16	#Nome do Posto
-StructInfo:	.space	28	#Número dado em bytes: | Data-2 | QtdCombust�vel-2 | Pre�o-4 | Distancia-4 | NomePosto-16
-
+StructInfo:	.space	32	#Número dado em bytes: | Data-2 | QtdCombust�vel-2 | Pre�o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
 
 #Declaração de strings
 Cadastrar:      .asciiz "\n1.Cadastrar abastecimento;\n" 
@@ -25,6 +24,8 @@ Ex_Qlmt:	.asciiz "Quilometragem: "
 .text
 #----------- Inicializando -----------#
 	and $s7,$s7,$zero	#"Seta" $s7 para 0 pois este contar� quantos cadastros foram feitos	
+	add $fp,$sp,$zero	#Escreve o valor maximo da pilha em FP
+	add $s6,$sp,$zero	#O ponteiro inicial será guardado em $s6
 #------------ Exibir Menu ------------#
 Menu:
 	li  $v0, 4
@@ -97,22 +98,26 @@ Cadastro:
 	syscall
 	
 	la $s4,ReadString
-	addi $sp,$sp,-28
 	
-	sw $t1,0($sp)	#Data e Qtd Comb. OK
-	s.s $f0,4($sp)	#Pre�o do litro	OK
-	sw $s1,8($sp)	#Km Atual	O
-	addi $sp,$sp,0xc
+	#addi $sp,$sp,-28
+	jal malloc
+	
+	sw $t1,0($v0)	#Data e Qtd Comb. OK
+	s.s $f0,4($v0)	#Pre�o do litro	OK
+	sw $s1,8($v0)	#Km Atual	O
+	addi $v0,$v0,0xc
 	addi $t0,$zero,4
 StoreWord:		#Nome do Posto
 	lw $t1,0($s4)
-	sw $t1,0($sp)
+	sw $t1,0($v0)
 	addi $s4,$s4,4
-	addi $sp,$sp,4
+	addi $v0,$v0,4
 	addi $t0,$t0,-1
 	bnez $t0,StoreWord
 	
-	addi $sp,$sp,-28
+	sw $zero,0($v0) #Ponteiro "seta prox"
+	
+	#addi $sp,$sp,-32
 	addi $s7,$s7,1
 		
 	j Menu	
@@ -120,13 +125,16 @@ StoreWord:		#Nome do Posto
 	
 #-------- Excluir Abstecimento -------#	
 Exclui:
-	jal RData
-	bne $s7,$zero,ExcluiRealmente
-	li $v0,4
-	la $a0,SemReg
-	syscall
+	add $t0,$fp,-64
+	sw $zero,0($t0)
 	j Menu
-ExcluiRealmente:
+	#jal RData
+	#bne $s7,$zero,ExcluiRealmente
+	#li $v0,4
+	#la $a0,SemReg
+	#syscall
+	#j Menu
+#ExcluiRealmente:
 	
 	
 #-------- Excluir Abstecimento -------#	
@@ -223,6 +231,31 @@ RData:
 	
 	jr $t4
 #------------ Recebe data ------------#
+
+#--------------- malloc --------------#
+malloc:
+	add  $t3, $fp, $zero
+	add  $t0, $sp, $zero
+	#add  $t0, $sp, 32	#$t0 will move through stack
+
+	#slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
+	#beq  $t2, $zero, blowup	#	then try next block
+	
+next:	lw   $t2, 0($t0)
+	beq  $t2, $zero, found	#if current block is empty
+	addi $t0, $t0, 32	#	else will check next block
+	
+	slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
+	bne  $t2, $zero, next	#	then try next block
+	
+blowup:	addi $v0, $sp, -32	#		else just add a new position at the top of stack
+	addi $sp, $sp, -32
+	jr   $ra
+
+found:	add  $v0, $t0, $zero	#return current pointer
+	jr   $ra
+#--------------- malloc --------------#
+
 Exit:
 	li $v0,17
 	li $a0,0
