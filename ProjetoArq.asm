@@ -106,7 +106,9 @@ Cadastro:
 	#addi $sp,$sp,-28
 	#jal malloc
 	addi $a0, $zero, 8
-	jal nalloc
+	addi $a1, $zero, 32
+	jal walloc
+	#jal nalloc
 	
 	add $t7,$v0,$zero #current pointer in t7
 	
@@ -294,6 +296,32 @@ RData:
 #	sub $v0, $t0, $t6
 #	jr $ra
 ##------------- new malloc ------------#
+
+#-------------- word alloc ------------#
+walloc: #a0 = number of words, a1 = alignment, +v0 = pointer
+	lui  $v0, 0x1004
+	add  $t7, $a0, $zero
+	
+w_next:	
+	lw   $t0, 0($v0)
+	beq  $t0, $zero, w_found
+	add  $v0, $v0, $a1 #find next aligned position
+	div  $v0, $v0, $a1 #crop to
+	mul  $v0, $v0, $a1 #align
+	add  $t7, $a0, $zero #reset count
+	j w_next
+	
+w_found:
+	addi $t7, $t7, -1
+	addi $v0, $v0, 4
+	beq  $t7, $zero, w_doneAlloc
+	j w_next
+	
+w_doneAlloc:
+	mul  $t0, $a0, 4
+	sub  $v0, $v0, $t0 #return to start of empty block
+	jr   $ra
+#-------------- byte alloc ------------#
 
 #------------- new malloc ------------#
 nalloc:
