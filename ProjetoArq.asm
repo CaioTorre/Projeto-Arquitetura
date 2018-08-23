@@ -274,7 +274,7 @@ RData:
 	jr $t4
 #------------ Recebe data ------------#
 
-#------------- new malloc ------------#
+##------------- new malloc ------------# #Deprecated (null pointer == 0 implies valid positions where there shouldnt be)
 #nalloc:
 #	lui  $t0, 0x1004	#Start search at the beginning of heap
 #	add  $t7, $a0, $zero	#Get number of bytes to be reserved in a0
@@ -308,29 +308,29 @@ _found:
 	jr $ra
 #------------- new malloc ------------#
 
-#--------------- malloc --------------#
-malloc:
-	add  $t3, $fp, $zero
-	add  $t0, $sp, $zero
-	#add  $t0, $sp, 32	#$t0 will move through stack
-
-	#slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
-	#beq  $t2, $zero, blowup	#	then try next block
-	
-next:	lw   $t2, 0($t0)
-	beq  $t2, $zero, found	#if current block is empty
-	addi $t0, $t0, 32	#	else will check next block
-	
-	slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
-	bne  $t2, $zero, next	#	then try next block
-	
-blowup:	addi $v0, $sp, -32	#		else just add a new position at the top of stack
-	addi $sp, $sp, -32
-	jr   $ra
-
-found:	add  $v0, $t0, $zero	#return current pointer
-	jr   $ra
-#--------------- malloc --------------#
+##--------------- malloc --------------# #Deprecated (use nalloc instead)
+#malloc:
+#	add  $t3, $fp, $zero
+#	add  $t0, $sp, $zero
+#	#add  $t0, $sp, 32	#$t0 will move through stack
+#
+#	#slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
+#	#beq  $t2, $zero, blowup	#	then try next block
+#	
+#next:	lw   $t2, 0($t0)
+#	beq  $t2, $zero, found	#if current block is empty
+#	addi $t0, $t0, 32	#	else will check next block
+#	
+#	slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
+#	bne  $t2, $zero, next	#	then try next block
+#	
+#blowup:	addi $v0, $sp, -32	#		else just add a new position at the top of stack
+#	addi $sp, $sp, -32
+#	jr   $ra
+#
+#found:	add  $v0, $t0, $zero	#return current pointer
+#	jr   $ra
+##--------------- malloc --------------#
 
 Exit:
 	li $v0,17
