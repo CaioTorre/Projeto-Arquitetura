@@ -23,9 +23,12 @@ SemReg:		.asciiz "Não há registro de abastecimento, retornando ao menu...\n"
 Ex_Qlmt:	.asciiz "Quilometragem: "
 .text
 #----------- Inicializando -----------#
+	#subi $sp, $sp, -28 
+	divu $sp, $sp, 32
+	mulu $sp, $sp, 32
 	and $s7,$s7,$zero	#"Seta" $s7 para 0 pois este contar� quantos cadastros foram feitos	
 	add $fp,$sp,$zero	#Escreve o valor maximo da pilha em FP
-	add $s6,$sp,$zero	#O ponteiro inicial será guardado em $s6
+	add $s6,$zero,$zero	#O ponteiro inicial será guardado em $s6
 #------------ Exibir Menu ------------#
 Menu:
 	li  $v0, 4
@@ -101,6 +104,7 @@ Cadastro:
 	
 	#addi $sp,$sp,-28
 	jal malloc
+	add $t7,$v0,$zero #current pointer in t7
 	
 	sw $t1,0($v0)	#Data e Qtd Comb. OK
 	s.s $f0,4($v0)	#Pre�o do litro	OK
@@ -115,9 +119,45 @@ StoreWord:		#Nome do Posto
 	addi $t0,$t0,-1
 	bnez $t0,StoreWord
 	
-	sw $zero,0($v0) #Ponteiro "seta prox"
+	add  $v0, $t7, $zero
+	beq  $s7, $zero, emptyList #if list is empty
 	
+	
+	
+	lw   $t4, 0($v0) #store current item epoch
+	andi $t4, $t4, 65535 #crop epoch data ???
+	lw   $t1, 0($s6) 
+	andi $t1, $t1, 65535 #crop epoch data ???
+	
+	slt  $t3, $t4, $t1 #t3 = 1 if first data < new data
+	bne  $t3, $zero, emptyList
+	
+	add  $t0, $s6, $zero	#Pega inicio da lista ligada
+findNext:
+	lw   $t2, 28($t0) #t2 is current->next
+	beq  $t2, $zero, exitFindNext
+	
+	lw   $t1, 0($t2) #t1 is current->next->data
+	andi $t1, $t1, 65535 #crop epoch data ???
+	
+	slt  $t3, $t1, $t4 #t3 is 1 if current->next->data < new data
+	beq  $t3, $zero, exitFindNext
+	
+	add  $t0, $t2, $zero #keep walking along list
+	j findNext
+exitFindNext:
+	sw   $t2, 28($v0) #new node -> next = current -> next
+	sw   $v0, 28($t0) #current -> next = current addr
+	j doneAdding
+	
+emptyList:
+	sw  $s6,28($v0) #new node -> next = old pointer
+	add $s6, $v0, $zero #old pointer = new node addr
+	#j doneAdding
+	
+	#sw $zero,0($v0) #Ponteiro "seta prox"
 	#addi $sp,$sp,-32
+doneAdding:
 	addi $s7,$s7,1
 		
 	j Menu	
