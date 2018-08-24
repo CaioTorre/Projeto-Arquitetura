@@ -18,8 +18,14 @@ Ins_Qntd:	.asciiz "Insira a quantidade de combustivel: "
 Ins_Prec:	.asciiz "Insira o preco por litro: "
 
 SemReg:		.asciiz "Não há registro de abastecimento, retornando ao menu...\n"
-ExibePorData:	.asciiz "Lista de abastecimentos\n"
+ExibePorData:	.asciiz "Lista de abastecimentos:\n"
 
+Kms:		.asciiz " Km"
+Litros:		.asciiz " Litros"
+ReaisPorLitro:   .asciiz " R$/l"
+
+Separacao:      .asciiz " | "
+Barra:		.asciiz "/"
 Espaco:		.asciiz " "
 Ponto:		.asciiz "."
 FimDeLinha:	.asciiz "\n"
@@ -189,45 +195,91 @@ EAbastece: # FORMAT <DD>/<MM>/<AAAA> | <INT>Km | <INT> litros (<FLOAT> R$/l) | P
 	#Número dado em bytes: | Data-2 | QtdCombust�vel-2 | Pre�o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
 	#ponteiro inicial $s6 
 	#$s7 qtd registros
-	#t0 ponteiro da lista
-	#$t1 decrementador
-	#$t2 contador de registro
+	#t5 ponteiro da lista
+	#$t6 decrementador
+	#$t7 contador de registro
 	
 	li $v0,4	#Recebe Nome do Posto no Addr. ReadString
 	la $a0, ExibePorData
 	syscall
 	
-	add $t0, $s6, $zero
+	add $t5, $s6, $zero
 	
 	
-	addi $t2, $zero, 1	
-	add $t1, $s7, $zero
+	addi $t7, $zero, 1	
+	add $t6, $s7, $zero
 	
 LoopExibe:
-	beq $t1, $zero, FimExibe 
+	beq $t6, $zero, FimExibe 
+	
 	
 	li $v0, 1
-	add $a0, $t2, $zero
-	syscall
+	add $a0, $t7 $zero
+	syscall		    #exibe o indice
+	jal PrintaPonto
 	jal PrintaEspaco
 	
-	lw $v0, 0($t0)
-	and $v0, $v0, 65535
-	jal EpochToDate
+	lh $v0, 0($t5)
+	#and $v0, $v0, 65535
+	jal EpochToDate     #pega a data e desconverte do epoc
 	
 	li $v0, 1
-	syscall
-	jal PrintaEspaco
+	syscall             #printa dia
+	jal PrintaBarra
 	
 	li $v0, 1
 	add $a0, $a1, $zero
-	syscall
-	jal PrintaEspaco
+	syscall             #printa mes
+	jal PrintaBarra
 	
 	li $v0, 1
 	add $a0, $a2, $zero
+	syscall             #printa ano
+	
+	jal PrintaSeparacao
+	
+	addi $t5, $t5, 2
+	
+	lh $a0, 0($t5)
+	li $v0, 1
+	syscall		    #printa qtd combustivel
+	
+	jal PrintaLitros
+	jal PrintaSeparacao
+	
+	addi $t5, $t5, 2
+	
+	lwc1 $f12, 0($t5)
+	li $v0, 2
+	syscall		    #printa preco
+	
+	jal PrintaReaisPorLitro
+	jal PrintaSeparacao
+	
+	addi $t5, $t5, 4
+	
+	lw $a0, 0($t5)
+	li $v0, 1
+	syscall		   #printa distancia
+	
+	jal PrintaKm
+	jal PrintaSeparacao
+	
+	addi $t5, $t5, 4
+	
+	la $a0, ($t5)
+	li $v0, 4
 	syscall
-	jal PrintaEspaco
+	
+	#jal PrintaFimDeLinha
+	
+	addi $t5, $t5, 16
+	lw $t5, 0($t5)
+	addi $t6, $t6, -1
+	addi $t7, $t7,  1
+	
+	j LoopExibe
+	
 	
 	
 	
@@ -240,6 +292,50 @@ PrintaEspaco:
 	la $a0, Espaco
 	syscall
 	jr $ra
+	
+PrintaBarra:
+	li $v0, 4
+	la $a0, Barra
+	syscall
+	jr $ra
+	
+PrintaPonto:
+	li $v0, 4
+	la $a0, Ponto
+	syscall
+	jr $ra
+	
+PrintaSeparacao:
+	li $v0, 4
+	la $a0, Separacao
+	syscall
+	jr $ra
+	
+PrintaLitros:
+	li $v0, 4
+	la $a0, Litros
+	syscall
+	jr $ra
+	
+PrintaReaisPorLitro:
+	li $v0, 4
+	la $a0, ReaisPorLitro
+	syscall
+	jr $ra
+	
+PrintaKm:
+	li $v0, 4
+	la $a0, Kms
+	syscall
+	jr $ra
+	
+PrintaFimDeLinha:
+	li $v0, 4
+	la $a0, FimDeLinha
+	syscall	
+	jr $ra
+
+	
 #--------- Exibe Abastecimento -------#	
 
 #---------- Exibe Consumo ------------#	
