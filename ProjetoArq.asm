@@ -8,6 +8,7 @@ Excluir:        .asciiz "2.Excluir abastecimento;\n"
 EAbastecimento: .asciiz "3.Exibir abastecimento;\n"
 EConsumoMedio:  .asciiz "4.Consumo médio;\n"
 EPrecoMedio:    .asciiz "5.Preço médio;\n\n"
+
 DigiteOpcao:    .asciiz "Digite a opção desejada: "
 
 Ins_Dia:	.asciiz "Insira o dia do abastecimento: "
@@ -20,15 +21,30 @@ Ins_Prec:	.asciiz "Insira o preco por litro: "
 
 SemReg:		.asciiz "Não há registro de abastecimento, retornando ao menu...\n"
 
+ExibePorData:	.asciiz "Lista de abastecimentos:\n"
+
+Kms:		.asciiz " Km"
+Litros:		.asciiz " Litros"
+ReaisPorLitro:   .asciiz " R$/l"
+
+Separacao:      .asciiz " | "
+Barra:		.asciiz "/"
+Espaco:		.asciiz " "
+Ponto:		.asciiz "."
+FimDeLinha:	.asciiz "\n"
+
+
 Ex_Qlmt:	.asciiz "Quilometragem: "
 .text
 #----------- Inicializando -----------#
 	#subi $sp, $sp, -28 
 	divu $sp, $sp, 32
 	mulu $sp, $sp, 32
+
 	and $s7,$s7,$zero	#"Seta" $s7 para 0 pois este contar? quantos cadastros foram feitos	
 	add $fp,$sp,$zero	#Escreve o valor maximo da pilha em FP
 	#lui $s6,0x1004
+
 	add $s6,$zero,$zero	#O ponteiro inicial será guardado em $s6
 #------------ Exibir Menu ------------#
 Menu:
@@ -66,12 +82,12 @@ Menu:
 	j  Menu
 	
 #--------- Op??o Selecionada ---------#	
-	
+
 #------ Cadastro Abastecimento -------#	
 Cadastro:
 	jal RData	
 	add $t1,$zero,$v0 # $t1 det?m do valor da EPOCH
-	
+
 	li $v0,4	#Recebe Nome do Posto no Addr. ReadString
 	la $a0,Ins_Nome
 	syscall
@@ -88,6 +104,7 @@ Cadastro:
 	add $s1,$zero,$v0
 	
 	li $v0,4	#Recebe Quantidade de combust?vel em upper($s0)
+
 	la $a0,Ins_Qntd
 	syscall
 	li $v0,5
@@ -96,6 +113,7 @@ Cadastro:
 	or $t1,$t1,$v0
 	
 	li $v0,4	#Recebe Pre?o do litro em $f0
+
 	la $a0,Ins_Prec
 	syscall
 	li $v0,6
@@ -104,6 +122,7 @@ Cadastro:
 	la $s4,ReadString
 	
 	#addi $sp,$sp,-28
+
 	#jal malloc
 	addi $a0, $zero, 8
 	jal nalloc
@@ -122,11 +141,11 @@ StoreWord:		#Nome do Posto
 	addi $v0,$v0,4
 	addi $t0,$t0,-1
 	bnez $t0,StoreWord
-	
+
 	#Start of linked list insertion
 	add  $v0, $t7, $zero
 	beq  $s7, $zero, emptyList #if list is empty
-	
+
 	lw   $t4, 0($v0) #store current item epoch
 	andi $t4, $t4, 65535 #crop epoch data ???
 	lw   $t1, 0($s6) 
@@ -152,6 +171,7 @@ exitFindNext:
 	sw   $t2, 28($v0) #new node -> next = current -> next
 	sw   $v0, 28($t0) #current -> next = current addr
 	j doneAdding
+
 emptyList:
 	sw  $s6,28($v0) #new node -> next = old pointer
 	add $s6, $v0, $zero #old pointer = new node addr
@@ -160,6 +180,7 @@ emptyList:
 	#sw $zero,0($v0) #Ponteiro "seta prox"
 	#addi $sp,$sp,-32
 doneAdding:
+
 	addi $s7,$s7,1
 		
 	j Menu	
@@ -177,31 +198,150 @@ Exclui:
 	#syscall
 	#j Menu
 #ExcluiRealmente:
-	
-	
+
 #-------- Excluir Abstecimento -------#	
 
 #--------- Exibe Abastecimento -------#	
 EAbastece: # FORMAT <DD>/<MM>/<AAAA> | <INT>Km | <INT> litros (<FLOAT> R$/l) | Posto <posto>
-	jal RData
-	addi $t0, $sp, -28
-TryNxt:	addi $t0, $t0, 28
-	lw  $t1, 0($t0)
-	sll $t1, $t1, 16
-	srl $t1, $t1, 16 # Crop EPOCH data
-	bne $v0, $t0, TryNxt 
+	#Número dado em bytes: | Data-2 | QtdCombust�vel-2 | Pre�o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
+	#ponteiro inicial $s6 
+	#$s7 qtd registros
+	#t5 ponteiro da lista
+	#$t6 decrementador
+	#$t7 contador de registro
 	
-	li  $v0, 4
-	la  $a0, Ex_Qlmt
-	syscall
-	li  $v0, 1
-	lw  $a0, 8($s0)
+	li $v0,4	#Recebe Nome do Posto no Addr. ReadString
+	la $a0, ExibePorData
 	syscall
 	
-	j Menu
-No_Val:	
+	add $t5, $s6, $zero
 	
-	j Menu
+	
+	addi $t7, $zero, 1	
+	add $t6, $s7, $zero
+	
+LoopExibe:
+	beq $t6, $zero, FimExibe 
+	
+	
+	li $v0, 1
+	add $a0, $t7 $zero
+	syscall		    #exibe o indice
+	jal PrintaPonto
+	jal PrintaEspaco
+	
+	lh $v0, 0($t5)
+	#and $v0, $v0, 65535
+	jal EpochToDate     #pega a data e desconverte do epoc
+	
+	li $v0, 1
+	syscall             #printa dia
+	jal PrintaBarra
+	
+	li $v0, 1
+	add $a0, $a1, $zero
+	syscall             #printa mes
+	jal PrintaBarra
+	
+	li $v0, 1
+	add $a0, $a2, $zero
+	syscall             #printa ano
+	
+	jal PrintaSeparacao
+	
+	addi $t5, $t5, 2
+	
+	lh $a0, 0($t5)
+	li $v0, 1
+	syscall		    #printa qtd combustivel
+	
+	jal PrintaLitros
+	jal PrintaSeparacao
+	
+	addi $t5, $t5, 2
+	
+	lwc1 $f12, 0($t5)
+	li $v0, 2
+	syscall		    #printa preco
+	
+	jal PrintaReaisPorLitro
+	jal PrintaSeparacao
+	
+	addi $t5, $t5, 4
+	
+	lw $a0, 0($t5)
+	li $v0, 1
+	syscall		   #printa distancia
+	
+	jal PrintaKm
+	jal PrintaSeparacao
+	
+	addi $t5, $t5, 4
+	
+	la $a0, ($t5)
+	li $v0, 4
+	syscall
+	
+	#jal PrintaFimDeLinha
+	
+	addi $t5, $t5, 16
+	lw $t5, 0($t5)
+	addi $t6, $t6, -1
+	addi $t7, $t7,  1
+	
+	j LoopExibe
+
+FimExibe:
+	j Menu 
+	
+PrintaEspaco:
+	li $v0, 4
+	la $a0, Espaco
+	syscall
+	jr $ra
+	
+PrintaBarra:
+	li $v0, 4
+	la $a0, Barra
+	syscall
+	jr $ra
+	
+PrintaPonto:
+	li $v0, 4
+	la $a0, Ponto
+	syscall
+	jr $ra
+	
+PrintaSeparacao:
+	li $v0, 4
+	la $a0, Separacao
+	syscall
+	jr $ra
+	
+PrintaLitros:
+	li $v0, 4
+	la $a0, Litros
+	syscall
+	jr $ra
+	
+PrintaReaisPorLitro:
+	li $v0, 4
+	la $a0, ReaisPorLitro
+	syscall
+	jr $ra
+	
+PrintaKm:
+	li $v0, 4
+	la $a0, Kms
+	syscall
+	jr $ra
+	
+PrintaFimDeLinha:
+	li $v0, 4
+	la $a0, FimDeLinha
+	syscall	
+	jr $ra
+
 #--------- Exibe Abastecimento -------#	
 
 #---------- Exibe Consumo ------------#	
@@ -251,6 +391,7 @@ RData:
 	add $t7,$zero,$v0
 	
 	li $v0,4	#Recebe M?s em $a1
+
 	la $a0,Ins_Mes
 	syscall
 	li $v0,5
