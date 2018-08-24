@@ -63,7 +63,7 @@ Menu:
 
 #------------ Exibir Menu ------------#	
 
-#--------- Op��o Selecionada ---------#		
+#--------- Opção Selecionada ---------#		
 	li $v0, 5
 	syscall
 	
@@ -169,6 +169,7 @@ emptyList:
 	#sw $zero,0($v0) #Ponteiro "seta prox"
 	#addi $sp,$sp,-32
 doneAdding:
+
 	addi $s7,$s7,1
 		
 	j Menu	
@@ -186,8 +187,7 @@ Exclui:
 	#syscall
 	#j Menu
 #ExcluiRealmente:
-	
-	
+
 #-------- Excluir Abstecimento -------#	
 
 #--------- Exibe Abastecimento -------#	
@@ -348,7 +348,7 @@ EMedio:
 
 #------ Converte Data para EPOCH -----#
 DateToEpoch: #DD em $a0 - MM em $a1 - AAAA em $a2
-	addi $t1, $a1, -1 # Janeiro � mes 1
+	addi $t1, $a1, -1 # Janeiro é mes 1
 	mul  $t1, $t1, 30
 	
 	addi $t2, $a2, -2000 # EPOCH em 2000
