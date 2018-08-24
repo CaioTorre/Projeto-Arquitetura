@@ -346,8 +346,50 @@ PrintaFimDeLinha:
 
 #---------- Exibe Consumo ------------#	
 EConsumo:
-#---------- Exibe Consumo ------------#	
-
+#---------- Exibe Consumo ------------#
+	add $t0, $s6, $zero
+	add $t4, $zero, $zero
+	add $t2, $zero, $zero
+	
+	bne $t0, $zero, LConsumo
+	
+	mtc1 $t0, $f0
+  	cvt.s.w $f0, $f0
+	add.s $f12, $f0, $f0
+	li $v0, 2
+	syscall	
+	
+	j    Menu
+	
+	LConsumo:
+		
+	lh  $t1, 2($t0)
+	add $t2, $t2, $t1		#salva a quantidade de combustivel
+	
+	lw  $t3, 8($t0)
+	add $t4, $zero, $t3		#salva Km
+	
+	add $t1, $zero, $t0
+	lw  $t0, 28($t0)
+	bne $t0, $zero, LConsumo
+	
+	lh  $t0, 2($t1)
+	sub $t2, $t2, $t0
+	add $t0, $zero, $s6
+	lw  $t3, 8($t0)
+	sub $t4, $t4, $t3
+	
+	mtc1 $t4, $f0
+  	cvt.s.w $f0, $f0
+  	mtc1 $t2, $f1
+  	cvt.s.w $f1, $f1
+	div.s $f12, $f0, $f1
+	
+	li $v0, 2
+	syscall	
+	
+	j Menu	
+	
 #-------- Exibe Preco Medio ----------#	
 EMedio:
 #-------- Exibe Preco Medio ----------#	
