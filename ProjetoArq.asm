@@ -1,6 +1,6 @@
 .data
 ReadString:	.space 	16	#Nome do Posto
-StructInfo:	.space	32	#Número dado em bytes: | Data-2 | QtdCombust�vel-2 | Pre�o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
+StructInfo:	.space	32	#Número dado em bytes: | Data-2 | QtdCombust?vel-2 | Pre?o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
 
 #Declaração de strings
 Cadastrar:      .asciiz "\n1.Cadastrar abastecimento;\n" 
@@ -8,7 +8,9 @@ Excluir:        .asciiz "2.Excluir abastecimento;\n"
 EAbastecimento: .asciiz "3.Exibir abastecimento;\n"
 EConsumoMedio:  .asciiz "4.Consumo médio;\n"
 EPrecoMedio:    .asciiz "5.Preço médio;\n\n"
-DigiteOpcao:    .asciiz "Digite a opção desejada: "   
+
+DigiteOpcao:    .asciiz "Digite a opção desejada: "
+
 Ins_Dia:	.asciiz "Insira o dia do abastecimento: "
 Ins_Mes:	.asciiz "Insira o mes do abastecimento: "
 Ins_Ano:	.asciiz "Insira o ano do abastecimento: "
@@ -18,6 +20,7 @@ Ins_Qntd:	.asciiz "Insira a quantidade de combustivel: "
 Ins_Prec:	.asciiz "Insira o preco por litro: "
 
 SemReg:		.asciiz "Não há registro de abastecimento, retornando ao menu...\n"
+
 ExibePorData:	.asciiz "Lista de abastecimentos:\n"
 
 Kms:		.asciiz " Km"
@@ -29,7 +32,7 @@ Barra:		.asciiz "/"
 Espaco:		.asciiz " "
 Ponto:		.asciiz "."
 FimDeLinha:	.asciiz "\n"
-
+Zero:		.asciiz "0"
 
 Ex_Qlmt:	.asciiz "Quilometragem: "
 .text
@@ -37,8 +40,11 @@ Ex_Qlmt:	.asciiz "Quilometragem: "
 	#subi $sp, $sp, -28 
 	divu $sp, $sp, 32
 	mulu $sp, $sp, 32
-	and $s7,$s7,$zero	#"Seta" $s7 para 0 pois este contar� quantos cadastros foram feitos	
+
+	and $s7,$s7,$zero	#"Seta" $s7 para 0 pois este contar? quantos cadastros foram feitos	
 	add $fp,$sp,$zero	#Escreve o valor maximo da pilha em FP
+	#lui $s6,0x1004
+
 	add $s6,$zero,$zero	#O ponteiro inicial será guardado em $s6
 #------------ Exibir Menu ------------#
 Menu:
@@ -63,7 +69,7 @@ Menu:
 
 #------------ Exibir Menu ------------#	
 
-#--------- Opção Selecionada ---------#		
+#--------- Op??o Selecionada ---------#		
 	li $v0, 5
 	syscall
 	
@@ -75,13 +81,13 @@ Menu:
 		
 	j  Menu
 	
-#--------- Op��o Selecionada ---------#	
-	
+#--------- Op??o Selecionada ---------#	
+
 #------ Cadastro Abastecimento -------#	
 Cadastro:
 	jal RData	
-	add $t1,$zero,$v0 # $t1 det�m do valor da EPOCH
-	
+	add $t1,$zero,$v0 # $t1 det?m do valor da EPOCH
+
 	li $v0,4	#Recebe Nome do Posto no Addr. ReadString
 	la $a0,Ins_Nome
 	syscall
@@ -97,7 +103,8 @@ Cadastro:
 	syscall
 	add $s1,$zero,$v0
 	
-	li $v0,4	#Recebe Quantidade de combust�vel em upper($s0)
+	li $v0,4	#Recebe Quantidade de combust?vel em upper($s0)
+
 	la $a0,Ins_Qntd
 	syscall
 	li $v0,5
@@ -105,7 +112,8 @@ Cadastro:
 	sll $v0,$v0,16
 	or $t1,$t1,$v0
 	
-	li $v0,4	#Recebe Pre�o do litro em $f0
+	li $v0,4	#Recebe Pre?o do litro em $f0
+
 	la $a0,Ins_Prec
 	syscall
 	li $v0,6
@@ -114,11 +122,15 @@ Cadastro:
 	la $s4,ReadString
 	
 	#addi $sp,$sp,-28
-	jal malloc
+
+	#jal malloc
+	addi $a0, $zero, 8
+	jal nalloc
+	
 	add $t7,$v0,$zero #current pointer in t7
 	
 	sw $t1,0($v0)	#Data e Qtd Comb. OK
-	s.s $f0,4($v0)	#Pre�o do litro	OK
+	s.s $f0,4($v0)	#Pre?o do litro	OK
 	sw $s1,8($v0)	#Km Atual	O
 	addi $v0,$v0,0xc
 	addi $t0,$zero,4
@@ -129,12 +141,11 @@ StoreWord:		#Nome do Posto
 	addi $v0,$v0,4
 	addi $t0,$t0,-1
 	bnez $t0,StoreWord
-	
+
+	#Start of linked list insertion
 	add  $v0, $t7, $zero
 	beq  $s7, $zero, emptyList #if list is empty
-	
-	
-	
+
 	lw   $t4, 0($v0) #store current item epoch
 	andi $t4, $t4, 65535 #crop epoch data ???
 	lw   $t1, 0($s6) 
@@ -160,7 +171,7 @@ exitFindNext:
 	sw   $t2, 28($v0) #new node -> next = current -> next
 	sw   $v0, 28($t0) #current -> next = current addr
 	j doneAdding
-	
+
 emptyList:
 	sw  $s6,28($v0) #new node -> next = old pointer
 	add $s6, $v0, $zero #old pointer = new node addr
@@ -192,7 +203,7 @@ Exclui:
 
 #--------- Exibe Abastecimento -------#	
 EAbastece: # FORMAT <DD>/<MM>/<AAAA> | <INT>Km | <INT> litros (<FLOAT> R$/l) | Posto <posto>
-	#Número dado em bytes: | Data-2 | QtdCombust�vel-2 | Pre�o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
+	#Número dado em bytes: | Data-2 | QtdCombust?vel-2 | Pre?o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
 	#ponteiro inicial $s6 
 	#$s7 qtd registros
 	#t5 ponteiro da lista
@@ -223,12 +234,18 @@ LoopExibe:
 	#and $v0, $v0, 65535
 	jal EpochToDate     #pega a data e desconverte do epoc
 	
+	add $t0, $a0, $zero
+	jal IdentaData
+	add $a0, $t0, $zero
 	li $v0, 1
 	syscall             #printa dia
 	jal PrintaBarra
 	
-	li $v0, 1
 	add $a0, $a1, $zero
+	add $t0, $a1, $zero
+	jal IdentaData
+	add $a0, $t0, $zero
+	li $v0, 1
 	syscall             #printa mes
 	jal PrintaBarra
 	
@@ -241,6 +258,10 @@ LoopExibe:
 	addi $t5, $t5, 2
 	
 	lh $a0, 0($t5)
+	add $t3, $a0, $zero
+	add $t4, $a0, $zero
+	jal identacaoCombustivel
+	add $a0, $t4, $zero
 	li $v0, 1
 	syscall		    #printa qtd combustivel
 	
@@ -259,6 +280,10 @@ LoopExibe:
 	addi $t5, $t5, 4
 	
 	lw $a0, 0($t5)
+	add $t0, $a0, $zero
+	add $t1, $a0, $zero
+	jal IdentaDistancia
+	add $a0, $t1, $zero
 	li $v0, 1
 	syscall		   #printa distancia
 	
@@ -279,10 +304,6 @@ LoopExibe:
 	addi $t7, $t7,  1
 	
 	j LoopExibe
-	
-	
-	
-	
 
 FimExibe:
 	j Menu 
@@ -335,6 +356,39 @@ PrintaFimDeLinha:
 	syscall	
 	jr $ra
 
+identacaoCombustivel:
+	div $t0, $t3, 100
+	bne $t0, $zero, Identado
+	li $v0, 4
+	la $a0, Zero
+	syscall
+	mul $t3, $t3, 10	
+	
+	j identacaoCombustivel	
+ 
+Identado:
+ 	jr $ra
+ 	
+IdentaData:
+	div $t1, $t0, 10
+	bne $t1, $zero, Identadoo
+	li $v0, 4
+	la $a0, Zero
+	syscall
+Identadoo:
+	jr $ra
+	
+IdentaDistancia:
+	div $t2, $t0, 10000
+	bne $t2, $zero, Identadooo
+	li $v0, 4
+	la $a0, Zero
+	syscall
+	mul $t0, $t0, 10
+	j IdentaDistancia
+	
+Identadooo:
+	jr $ra
 	
 #--------- Exibe Abastecimento -------#	
 
@@ -348,7 +402,7 @@ EMedio:
 
 #------ Converte Data para EPOCH -----#
 DateToEpoch: #DD em $a0 - MM em $a1 - AAAA em $a2
-	addi $t1, $a1, -1 # Janeiro é mes 1
+	addi $t1, $a1, -1 # Janeiro ? mes 1
 	mul  $t1, $t1, 30
 	
 	addi $t2, $a2, -2000 # EPOCH em 2000
@@ -371,7 +425,7 @@ EpochToDate: #EPOCH em $v0
 	sub  $a0, $t0, $t1 # Resto em $a0 (dia)
 
 	addi $a2, $a2, 2000 # EPOCH em 2000
-	addi $a1, $a1, 1 # Janeiro � mes 1
+	addi $a1, $a1, 1 # Janeiro ? mes 1
 	
 	jr $ra
 #------ Converte EPOCH para Data -----#
@@ -384,7 +438,8 @@ RData:
 	syscall
 	add $t7,$zero,$v0
 	
-	li $v0,4	#Recebe M�s em $a1
+	li $v0,4	#Recebe M?s em $a1
+
 	la $a0,Ins_Mes
 	syscall
 	li $v0,5
@@ -408,29 +463,63 @@ RData:
 	jr $t4
 #------------ Recebe data ------------#
 
-#--------------- malloc --------------#
-malloc:
-	add  $t3, $fp, $zero
-	add  $t0, $sp, $zero
-	#add  $t0, $sp, 32	#$t0 will move through stack
+##------------- new malloc ------------# #Deprecated (null pointer == 0 implies valid positions where there shouldnt be)
+#nalloc:
+#	lui  $t0, 0x1004	#Start search at the beginning of heap
+#	add  $t7, $a0, $zero	#Get number of bytes to be reserved in a0
+#_next:	lw   $t2, 0($t0)
+#	beq  $t2, $zero, _found	#If found zeroed-out position, check for contiguous
+#	addi $t0, $t0, 4
+#	add  $t7, $a0, $zero	#Else start again at next position
+#	j _next
+#_found:
+#	addi $t7, $t7, -1	#One block down
+#	addi $t0, $t0, 4	#Check next for continuity
+#	beq  $t7, $zero, _doneAlloc
+#	#addi $t0, $t0, 4	#Check next for continuity
+#	j _next
+#_doneAlloc:
+#	mul $t6, $a0, 4		#Return to start of empty block
+#	sub $v0, $t0, $t6
+#	jr $ra
+##------------- new malloc ------------#
 
-	#slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
-	#beq  $t2, $zero, blowup	#	then try next block
-	
-next:	lw   $t2, 0($t0)
-	beq  $t2, $zero, found	#if current block is empty
-	addi $t0, $t0, 32	#	else will check next block
-	
-	slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
-	bne  $t2, $zero, next	#	then try next block
-	
-blowup:	addi $v0, $sp, -32	#		else just add a new position at the top of stack
-	addi $sp, $sp, -32
-	jr   $ra
+#------------- new malloc ------------#
+nalloc:
+	lui  $t0, 0x1004	#Start search at the beginning of heap
+_next:	lw   $t2, 0($t0)
+	beq  $t2, $zero, _found	#If found zeroed-out position, check for contiguous
+	addi $t0, $t0, 32
+	j _next
+_found:
+	add $v0, $t0, $zero
+	#addi $t0, $t0, 4	#Check next for continuity
+	jr $ra
+#------------- new malloc ------------#
 
-found:	add  $v0, $t0, $zero	#return current pointer
-	jr   $ra
-#--------------- malloc --------------#
+##--------------- malloc --------------# #Deprecated (use nalloc instead)
+#malloc:
+#	add  $t3, $fp, $zero
+#	add  $t0, $sp, $zero
+#	#add  $t0, $sp, 32	#$t0 will move through stack
+#
+#	#slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
+#	#beq  $t2, $zero, blowup	#	then try next block
+#	
+#next:	lw   $t2, 0($t0)
+#	beq  $t2, $zero, found	#if current block is empty
+#	addi $t0, $t0, 32	#	else will check next block
+#	
+#	slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
+#	bne  $t2, $zero, next	#	then try next block
+#	
+#blowup:	addi $v0, $sp, -32	#		else just add a new position at the top of stack
+#	addi $sp, $sp, -32
+#	jr   $ra
+#
+#found:	add  $v0, $t0, $zero	#return current pointer
+#	jr   $ra
+##--------------- malloc --------------#
 
 Exit:
 	li $v0,17
