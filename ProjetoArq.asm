@@ -32,7 +32,7 @@ Barra:		.asciiz "/"
 Espaco:		.asciiz " "
 Ponto:		.asciiz "."
 FimDeLinha:	.asciiz "\n"
-
+Zero:		.asciiz "0"
 
 Ex_Qlmt:	.asciiz "Quilometragem: "
 .text
@@ -203,7 +203,7 @@ Exclui:
 
 #--------- Exibe Abastecimento -------#	
 EAbastece: # FORMAT <DD>/<MM>/<AAAA> | <INT>Km | <INT> litros (<FLOAT> R$/l) | Posto <posto>
-	#Número dado em bytes: | Data-2 | QtdCombust�vel-2 | Pre�o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
+	#Número dado em bytes: | Data-2 | QtdCombust?vel-2 | Pre?o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
 	#ponteiro inicial $s6 
 	#$s7 qtd registros
 	#t5 ponteiro da lista
@@ -234,12 +234,18 @@ LoopExibe:
 	#and $v0, $v0, 65535
 	jal EpochToDate     #pega a data e desconverte do epoc
 	
+	add $t0, $a0, $zero
+	jal IdentaData
+	add $a0, $t0, $zero
 	li $v0, 1
 	syscall             #printa dia
 	jal PrintaBarra
 	
-	li $v0, 1
 	add $a0, $a1, $zero
+	add $t0, $a1, $zero
+	jal IdentaData
+	add $a0, $t0, $zero
+	li $v0, 1
 	syscall             #printa mes
 	jal PrintaBarra
 	
@@ -252,6 +258,10 @@ LoopExibe:
 	addi $t5, $t5, 2
 	
 	lh $a0, 0($t5)
+	add $t3, $a0, $zero
+	add $t4, $a0, $zero
+	jal identacaoCombustivel
+	add $a0, $t4, $zero
 	li $v0, 1
 	syscall		    #printa qtd combustivel
 	
@@ -270,6 +280,10 @@ LoopExibe:
 	addi $t5, $t5, 4
 	
 	lw $a0, 0($t5)
+	add $t0, $a0, $zero
+	add $t1, $a0, $zero
+	jal IdentaDistancia
+	add $a0, $t1, $zero
 	li $v0, 1
 	syscall		   #printa distancia
 	
@@ -342,6 +356,40 @@ PrintaFimDeLinha:
 	syscall	
 	jr $ra
 
+identacaoCombustivel:
+	div $t0, $t3, 100
+	bne $t0, $zero, Identado
+	li $v0, 4
+	la $a0, Zero
+	syscall
+	mul $t3, $t3, 10	
+	
+	j identacaoCombustivel	
+ 
+Identado:
+ 	jr $ra
+ 	
+IdentaData:
+	div $t1, $t0, 10
+	bne $t1, $zero, Identadoo
+	li $v0, 4
+	la $a0, Zero
+	syscall
+Identadoo:
+	jr $ra
+	
+IdentaDistancia:
+	div $t2, $t0, 10000
+	bne $t2, $zero, Identadooo
+	li $v0, 4
+	la $a0, Zero
+	syscall
+	mul $t0, $t0, 10
+	j IdentaDistancia
+	
+Identadooo:
+	jr $ra
+	
 #--------- Exibe Abastecimento -------#	
 
 #---------- Exibe Consumo ------------#	
