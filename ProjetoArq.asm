@@ -1,15 +1,15 @@
 .data
 ReadString:	.space 	16	#Nome do Posto
-StructInfo:	.space	32	#Número dado em bytes: | Data-2 | QtdCombust?vel-2 | Pre?o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
+StructInfo:	.space	32	#NÃºmero dado em bytes: | Data-2 | QtdCombust?vel-2 | Pre?o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
 
-#Declaração de strings
+#DeclaraÃ§Ã£o de strings
 Cadastrar:      .asciiz "\n1.Cadastrar abastecimento;\n" 
 Excluir:        .asciiz "2.Excluir abastecimento;\n"
 EAbastecimento: .asciiz "3.Exibir abastecimento;\n"
-EConsumoMedio:  .asciiz "4.Consumo médio;\n"
-EPrecoMedio:    .asciiz "5.Preço médio;\n\n"
+EConsumoMedio:  .asciiz "4.Consumo mÃ©dio;\n"
+EPrecoMedio:    .asciiz "5.PreÃ§o mÃ©dio;\n\n"
 
-DigiteOpcao:    .asciiz "Digite a opção desejada: "
+DigiteOpcao:    .asciiz "Digite a opÃ§Ã£o desejada: "
 
 Ins_Dia:	.asciiz "Insira o dia do abastecimento: "
 Ins_Mes:	.asciiz "Insira o mes do abastecimento: "
@@ -19,7 +19,7 @@ Ins_Qlmt:	.asciiz "Insira a quilometragem do carro: "
 Ins_Qntd:	.asciiz "Insira a quantidade de combustivel: "
 Ins_Prec:	.asciiz "Insira o preco por litro: "
 
-SemReg:		.asciiz "Não há registro de abastecimento, retornando ao menu...\n"
+SemReg:		.asciiz "NÃ£o hÃ¡ registro de abastecimento, retornando ao menu...\n"
 
 ExibePorData:	.asciiz "Lista de abastecimentos:\n"
 
@@ -45,7 +45,7 @@ Ex_Qlmt:	.asciiz "Quilometragem: "
 	add $fp,$sp,$zero	#Escreve o valor maximo da pilha em FP
 	#lui $s6,0x1004
 
-	add $s6,$zero,$zero	#O ponteiro inicial será guardado em $s6
+	add $s6,$zero,$zero	#O ponteiro inicial serÃ¡ guardado em $s6
 #------------ Exibir Menu ------------#
 Menu:
 	li  $v0, 4
@@ -187,10 +187,72 @@ doneAdding:
 #------ Cadastro Abastecimento -------#		
 	
 #-------- Excluir Abstecimento -------#	
+
+	#ponteiro inicial $s6 
+	#$s7 qtd registros
+	
+	#$t1 valor da data digitado em EPOCH
+	#$t2 valor da data na lista ligada
+	#$t3 Ponteiro anterior
+	#t5 ponteiro da lista
+	#$t6 decrementador
+	
 Exclui:
-	add $t0,$fp,-64
-	sw $zero,0($t0)
+	jal RData	
+	add $t1,$zero,$v0 # valor da EPOCH em $t1
+	
+	add $t5, $s6, $zero # Ponteiro da lista em $t5
+	add $t6, $s7, $zero # Quantidade de registros em $t6
+	beq $t6, $zero, MsgSemReg
+	
+	
+	lh $t2, 0($t5)	# Carrega a data da lista
+	lw $t3, 28($t5)
+	beq $t1, $t2, ExcluiPrimeiroElemento
+	addi $t6, $t6, -1
+	
+LoopProcuraData:
+	beq $t6, $zero, MsgSemReg
+	
+	addi $t5, $t5, 28 # Avança pra prosição do ponteiro
+	addi $t6, $t6, -1
+	lw $t5, 0($t5) # Proximo elento da lista
+	
+	lh $t2, 0($t5)	# Carrega a data da lista
+	beq $t1, $t2, ExcluiRealmente
+	lw $t3, 28($t5)
+	
+	bne $t1, $t2, LoopProcuraData
+
+MsgSemReg:	
+	li $v0, 4
+	la $a0, SemReg
+	syscall
+	j FimExclui
+
+ExcluiPrimeiroElemento:
+	sw $zero, 0($t5)
+	sw $t3, 28($t5)
+	add $s6, $t3, $zero
+	addi $s7, $s7, -1
+	j FimExclui
+			
+ExcluiRealmente:	
+	li  $v0, 4
+	la $a0, Cadastrar
+	syscall
+	
+	sw $zero, 0($t5)
+	sw $t3, 28($t5)
+	
+	addi $s7, $s7, -1
+	
+	
+FimExclui:
 	j Menu
+	#add $t0,$fp,-64
+	#sw $zero,0($t0)
+	#j Menu
 	#jal RData
 	#bne $s7,$zero,ExcluiRealmente
 	#li $v0,4
@@ -203,7 +265,7 @@ Exclui:
 
 #--------- Exibe Abastecimento -------#	
 EAbastece: # FORMAT <DD>/<MM>/<AAAA> | <INT>Km | <INT> litros (<FLOAT> R$/l) | Posto <posto>
-	#Número dado em bytes: | Data-2 | QtdCombust�vel-2 | Pre�o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
+	#NÃºmero dado em bytes: | Data-2 | QtdCombustï¿½vel-2 | Preï¿½o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
 	#ponteiro inicial $s6 
 	#$s7 qtd registros
 	#t5 ponteiro da lista
