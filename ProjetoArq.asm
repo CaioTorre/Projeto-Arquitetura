@@ -194,7 +194,7 @@ doneAdding:
 	#$t1 valor da data digitado em EPOCH
 	#$t2 valor da data na lista ligada
 	#$t3 Ponteiro anterior
-	#$t4 
+	#$t4 ->prox do item excluido
 	#t5 ponteiro da lista
 	#$t6 decrementador
 	
