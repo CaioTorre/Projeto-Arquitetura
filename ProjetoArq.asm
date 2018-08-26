@@ -194,6 +194,7 @@ doneAdding:
 	#$t1 valor da data digitado em EPOCH
 	#$t2 valor da data na lista ligada
 	#$t3 Ponteiro anterior
+	#$t4 
 	#t5 ponteiro da lista
 	#$t6 decrementador
 	
@@ -207,7 +208,7 @@ Exclui:
 	
 	
 	lh $t2, 0($t5)	# Carrega a data da lista
-	lw $t3, 28($t5)
+	la $t3, ($t5)
 	beq $t1, $t2, ExcluiPrimeiroElemento
 	addi $t6, $t6, -1
 	
@@ -220,7 +221,7 @@ LoopProcuraData:
 	
 	lh $t2, 0($t5)	# Carrega a data da lista
 	beq $t1, $t2, ExcluiRealmente
-	lw $t3, 28($t5)
+	la $t3, ($t5)
 	
 	bne $t1, $t2, LoopProcuraData
 
@@ -232,34 +233,21 @@ MsgSemReg:
 
 ExcluiPrimeiroElemento:
 	sw $zero, 0($t5)
-	sw $t3, 28($t5)
+	lw $t3, 28($t5)
 	add $s6, $t3, $zero
 	addi $s7, $s7, -1
 	j FimExclui
 			
 ExcluiRealmente:	
-	li  $v0, 4
-	la $a0, Cadastrar
-	syscall
 	
 	sw $zero, 0($t5)
-	sw $t3, 28($t5)
+	lw $t4, 28($t5)
+	sw $t4, 28($t3)
 	
-	addi $s7, $s7, -1
-	
+	addi $s7, $s7, -1	
 	
 FimExclui:
 	j Menu
-	#add $t0,$fp,-64
-	#sw $zero,0($t0)
-	#j Menu
-	#jal RData
-	#bne $s7,$zero,ExcluiRealmente
-	#li $v0,4
-	#la $a0,SemReg
-	#syscall
-	#j Menu
-#ExcluiRealmente:
 
 #-------- Excluir Abstecimento -------#	
 
