@@ -1,15 +1,16 @@
 .data
 ReadString:	.space 	16	#Nome do Posto
-StructInfo:	.space	32	#NÃºmero dado em bytes: | Data-2 | QtdCombust?vel-2 | Pre?o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
+StructInfo:	.space	32	#Número dado em bytes: | Data-2 | QtdCombust?vel-2 | Pre?o-4 | Distancia-4 | NomePosto-16 | PonteiroProx-4
 
-#DeclaraÃ§Ã£o de strings
+#Declaração de strings
 Cadastrar:      .asciiz "\n1.Cadastrar abastecimento;\n" 
 Excluir:        .asciiz "2.Excluir abastecimento;\n"
 EAbastecimento: .asciiz "3.Exibir abastecimento;\n"
-EConsumoMedio:  .asciiz "4.Consumo mÃ©dio;\n"
-EPrecoMedio:    .asciiz "5.PreÃ§o mÃ©dio;\n\n"
+EConsumoMedio:  .asciiz "4.Consumo médio;\n"
+EPrecoMedio:    .asciiz "5.Preço médio;\n"
+SairProg:	.asciiz "6.Sair\n\n"
 
-DigiteOpcao:    .asciiz "Digite a opÃ§Ã£o desejada: "
+DigiteOpcao:    .asciiz "Digite a opção desejada: "
 
 Ins_Dia:	.asciiz "Insira o dia do abastecimento: "
 Ins_Mes:	.asciiz "Insira o mes do abastecimento: "
@@ -19,13 +20,15 @@ Ins_Qlmt:	.asciiz "Insira a quilometragem do carro: "
 Ins_Qntd:	.asciiz "Insira a quantidade de combustivel: "
 Ins_Prec:	.asciiz "Insira o preco por litro: "
 
-SemReg:		.asciiz "NÃ£o hÃ¡ registro de abastecimento, retornando ao menu...\n"
+SemReg:		.asciiz "Não há registro de abastecimento, retornando ao menu...\n"
 
 ExibePorData:	.asciiz "Lista de abastecimentos:\n"
 
 Kms:		.asciiz " Km"
 Litros:		.asciiz " Litros"
-ReaisPorLitro:   .asciiz " R$/l"
+
+ReaisPorLitro:   .asciiz " R$/L"
+Reais:		.asciiz "R$ "
 
 Separacao:      .asciiz " | "
 Barra:		.asciiz "/"
@@ -35,7 +38,10 @@ FimDeLinha:	.asciiz "\n"
 Zero:		.asciiz "0"
 
 Ex_Qlmt:	.asciiz "Quilometragem: "
+MenuNomePreco:	.asciiz "  | Nome do Posto    | Preço Médio\n"
 .text
+main:
+
 #----------- Inicializando -----------#
 	#subi $sp, $sp, -28 
 	divu $sp, $sp, 32
@@ -45,7 +51,8 @@ Ex_Qlmt:	.asciiz "Quilometragem: "
 	add $fp,$sp,$zero	#Escreve o valor maximo da pilha em FP
 	#lui $s6,0x1004
 
-	add $s6,$zero,$zero	#O ponteiro inicial serÃ¡ guardado em $s6
+	add $s6,$zero,$zero	#O ponteiro inicial será guardado em $s6
+
 #------------ Exibir Menu ------------#
 Menu:
 	li  $v0, 4
@@ -64,6 +71,9 @@ Menu:
 	la $a0, EPrecoMedio
 	syscall
 	
+	la $a0, SairProg
+	syscall
+	
 	la $a0, DigiteOpcao
 	syscall
 
@@ -74,6 +84,14 @@ Menu:
 	syscall
 	
 	beq $v0,1,Cadastro
+	beq $v0,6,Exit
+	bne $s6,$zero,StartOpcao
+	li $v0,4
+	la $a0,SemReg
+	syscall
+	j  Menu
+StartOpcao:
+
 	beq $v0,2,Exclui
 	beq $v0,3,EAbastece
 	beq $v0,4,EConsumo
@@ -81,7 +99,7 @@ Menu:
 		
 	j  Menu
 	
-#--------- Op??o Selecionada ---------#	
+#--------- Opção Selecionada ---------#	
 
 #------ Cadastro Abastecimento -------#	
 Cadastro:
@@ -153,7 +171,6 @@ StoreWord:		#Nome do Posto
 	
 	slt  $t3, $t4, $t1 #t3 = 1 if first data < new data
 	bne  $t3, $zero, emptyList
-	
 	add  $t0, $s6, $zero	#Pega inicio da lista ligada
 findNext:
 	lw   $t2, 28($t0) #t2 is current->next
@@ -248,7 +265,6 @@ ExcluiRealmente:
 	
 FimExclui:
 	j Menu
-
 #-------- Excluir Abstecimento -------#	
 
 #--------- Exibe Abastecimento -------#	
@@ -275,7 +291,8 @@ LoopExibe:
 	
 	
 	li $v0, 1
-	add $a0, $t7 $zero
+	add $a0, $t7, $zero
+
 	syscall		    #exibe o indice
 	jal PrintaPonto
 	jal PrintaEspaco
@@ -284,9 +301,11 @@ LoopExibe:
 	#and $v0, $v0, 65535
 	jal EpochToDate     #pega a data e desconverte do epoc
 	
+
 	add $t0, $a0, $zero
 	jal IdentaData
 	add $a0, $t0, $zero
+
 	li $v0, 1
 	syscall             #printa dia
 	jal PrintaBarra
@@ -296,6 +315,7 @@ LoopExibe:
 	jal IdentaData
 	add $a0, $t0, $zero
 	li $v0, 1
+
 	syscall             #printa mes
 	jal PrintaBarra
 	
@@ -308,10 +328,12 @@ LoopExibe:
 	addi $t5, $t5, 2
 	
 	lh $a0, 0($t5)
+
 	add $t3, $a0, $zero
 	add $t4, $a0, $zero
 	jal identacaoCombustivel
 	add $a0, $t4, $zero
+
 	li $v0, 1
 	syscall		    #printa qtd combustivel
 	
@@ -330,10 +352,12 @@ LoopExibe:
 	addi $t5, $t5, 4
 	
 	lw $a0, 0($t5)
+
 	add $t0, $a0, $zero
 	add $t1, $a0, $zero
 	jal IdentaDistancia
 	add $a0, $t1, $zero
+
 	li $v0, 1
 	syscall		   #printa distancia
 	
@@ -439,7 +463,6 @@ IdentaDistancia:
 	
 Identadooo:
 	jr $ra
-	
 #--------- Exibe Abastecimento -------#	
 
 #---------- Exibe Consumo ------------#	
@@ -447,7 +470,151 @@ EConsumo:
 #---------- Exibe Consumo ------------#	
 
 #-------- Exibe Preco Medio ----------#	
-EMedio:
+EMedio:	#$t0 - reg. temp. para percorrer lista; $t1 - reg. para guardar string temp.; $t3 - inicio pilha; $t4 - quantidade em pilha; $t5 - temp. para receber word; $f31 - preço temp.
+	#Data Format, bytes - | val medio - 4 | freq - 4 | nome - 16 | sigma preços - 4|
+	add $t0,$s6,$zero
+	add $fp,$sp,$zero
+	add $t4,$zero,$zero
+	add $t3,$sp,$zero
+	la $t1,ReadString
+	
+ReadNewEntry:	#Lê nova entrada
+	l.s $f31,4($t0)
+	addi $t0,$t0,12
+	addi $t2,$zero,4	#$t2 - neste caso, para contar 1 word
+	
+CarregaStringEMedio:
+	lw $t5,0($t0)
+	sw $t5,0($t1)
+	addi $t0,$t0,4
+	addi $t1,$t1,4
+	addi $t2,$t2,-1
+	bne $t2,$zero,CarregaStringEMedio
+	addi $t1,$t1,-16
+	
+	beq $t3,$sp,AnotherEntry
+	add $fp,$zero,$t3	#$fp recebe o endereço do inicio da pilha
+	la $a0,($t1)
+CheckNameEMedio:	#Procura se há ocorrencia da palavra então carregada
+	la $a1,-24($fp)
+	jal cmpstr
+	addi $fp,$fp,-28
+	bne $v0,$zero,IncrementEntry
+	beq $fp,$sp,AnotherEntry
+	j CheckNameEMedio
+	
+IncrementEntry:		#Contabiliza novos resultados daquela palavra
+	l.s $f30,0($fp)
+	add.s  $f31,$f31,$f30
+	s.s $f31,0($fp)
+	lw $t2,20($fp)
+	addi $t2,$t2,1
+	sw $t2,20($fp)
+	mtc1 $t2,$f30	#Move $t2 para COPROCESSOR 1 (FLU-floating point unit)
+	cvt.s.w $f30,$f30 #Move os 32-bit inteiros da direita para um ponto flutuante (reg. esquerda)
+	div.s $f31,$f31,$f30
+	s.s $f31,24($fp)
+	j PrepareToReadNewEntry
+	
+AnotherEntry:		#Nova palavra, novo espaço na pilha...
+	addi $sp,$sp,-28	#libera 28 bytes
+	s.s $f31,0($sp)
+	addi $fp,$fp,-24	#pos 24
+	addi $t2,$zero,4	#$t2 - para contar 4 words
+StoreFirstEMedio:
+	lw $t5,0($t1)
+	sw $t5,0($fp)
+	addi $fp,$fp,4
+	addi $t1,$t1,4
+	addi $t2,$t2,-1
+	bne $t2,$zero,StoreFirstEMedio
+	addi $t1,$t1,-16
+	
+	addi $t2,$zero,1	#pos 8 e $t2 - "seta" frequencia
+	sw $t2,0($fp)
+	addi $fp,$fp,4		#pos 4 - guarda valor medio atual
+	s.s $f31,0($fp)		
+	add $t4,$t4,1
+	#$lw $t2,-4($fp)
+	#l.s $f31,-24($fp)
+	#div.s 
+	#sw $f31,0($fp)	
+	
+PrepareToReadNewEntry:		#Vamos para o próximo cadastro...
+	lw $t2,0($t0)		#$t2 = end. do prox
+	beq $t2,$zero,ExitEMedio
+	add $t0,$t2,$zero
+	j ReadNewEntry
+	
+ExitEMedio:
+	#Todo processo de imprimir em decrescente e entao voltar para o menu
+	add $a0,$zero,$t3	#inicio da pilha em $a0
+	add $a1,$zero,$t4	#quantidade de infos da pilha em $a1
+	
+	jal BSort
+	#$v0 - inicio da pilha; $v1 - quantidade de infos
+	#$t0 - comparador de \n; $t1 - reg. para guardar string temp.; $s5 - inicio da pilha; $t5 - temp. contador de null; $t6 - recebe bytes; $t7 - contador de índice.
+	#Data Format, bytes - | val medio - 4 | freq - 4 | nome - 16 | sigma preços - 4|
+	add $s5,$zero,$v0
+	
+	li  $v0, 4
+	la $a0, MenuNomePreco
+	syscall
+	
+	addi $t7,$zero,1
+	la $t1,ReadString
+LoopPrintEMEdio:
+	li $v0, 1
+	add $a0, $t7, $zero
+	syscall		    #exibe o indice
+	jal PrintaSeparacao
+
+	addi $t2,$zero,16	#numero de repetiçoes do loop abaixo
+	add $t5,$zero,$zero	#contador de null
+	addi $t0,$zero,10	#comparador de \n
+	addi $sp,$sp,4	
+LoopPrintNomePostoEMEdio:
+	lb $t6,0($sp)
+	bne $t6,$t0,ContinueStoringEMedio
+	add $t6,$zero,$zero
+ContinueStoringEMedio:
+	sb $t6,0($t1)
+	addi $t1,$t1,1
+	addi $sp,$sp,1
+	addi $t2,$t2,-1
+	bne $t6,$zero,DontCountNullEMedio
+	addi $t5,$t5,1
+DontCountNullEMedio:
+	bne $t2,$zero,LoopPrintNomePostoEMEdio
+	
+	addi $t1,$t1,-16
+	addi $sp,$sp,4
+	
+	li $v0,4
+	add $a0,$t1,$zero
+	syscall
+	
+AligningTextEMedio:
+	jal PrintaEspaco
+	addi $t5,$t5,-1
+	bne $t5,$zero,AligningTextEMedio
+	
+	jal PrintaSeparacao
+	
+	li $v0,4
+	la $a0,Reais
+	syscall
+	
+	l.s $f12,0($sp)
+	li $v0,2
+	syscall
+	addi $sp,$sp,4
+	
+	jal PrintaFimDeLinha
+	
+	addi $t7,$t7,1
+	bne $sp,$s5,LoopPrintEMEdio
+	j Menu 
 #-------- Exibe Preco Medio ----------#	
 
 #------ Converte Data para EPOCH -----#
@@ -479,6 +646,7 @@ EpochToDate: #EPOCH em $v0
 	
 	jr $ra
 #------ Converte EPOCH para Data -----#
+
 #------------ Recebe data ------------#
 RData:	
 	li $v0,4	#Recebe Dia em $a0
@@ -495,7 +663,7 @@ RData:
 	li $v0,5
 	syscall
 	add $t6,$zero,$v0
-	
+
 	li $v0,4	#Recebe Ano em $a2
 	la $a0,Ins_Ano
 	syscall
@@ -570,6 +738,79 @@ _found:
 #found:	add  $v0, $t0, $zero	#return current pointer
 #	jr   $ra
 ##--------------- malloc --------------#
+
+#--------------- cmpstr --------------#
+cmpstr:	#$a0 - End. String 1, $a1 - End. String 2
+	lb $t6,0($a0)
+	lb $t7,0($a1)
+	
+	bne $t6,$t7,cmpstrExitFalse
+	beq $t6,$zero,cmpstrExitTrue
+	
+	addi $a0,$a0,1
+	addi $a1,$a1,1
+	
+	j cmpstr
+cmpstrExitTrue:
+	addi $v0,$zero,1	#Retorna 1 caso a string seja igual
+	jr $ra
+cmpstrExitFalse:
+	add $v0,$zero,$zero	#Retorna 0 caso a string seja diferente
+	jr $ra	
+#--------------- cmpstr --------------#
+#--------------- BSort --------------#
+#$a0 - inicio pilha; $a1 - n infos;
+#compare floating point number:
+#c.eq.s fs,ft (compare if fs is equal to ft)
+#bc1t LABEL (if true branch to the LABEL)
+BSort:
+	add $t6, $a0, $zero # save $a0 into $t6
+	add $t5, $a1, $zero # save $a1 into $t5
+	addi $t7, $zero,1 # i = 1
+for1tst: 
+	slt $t0, $t7, $t5 # $t0 = 0 if $t7 ? $t5 (i ? n)
+	beq $t0, $zero, exit1 # go to exit1 if $t7 ? $t5 (i ? n)
+	addi $s1,$t7,-1  # j = i – 1
+for2tst: 
+	slti $t0, $s1, 0 # $t0 = 1 if $s1 < 0 (j < 0)
+	bne $t0, $zero, exit2 # go to exit2 if $s1 < 0 (j < 0)
+	mulu $t1, $s1, 28 # $t1 = j * 28
+	sub $t2, $t6, $t1 # $t2 = v - (j * 28)
+	l.s $f4, -4($t2) # $f4 = v[j]
+	l.s $f5, -32($t2) # $f5 = v[j + 1]
+	c.lt.s $f5,$f4 # flag 0 = false if $f5 ? $f4
+	bc1f exit2 # go to exit2 if $f5 ? $f4
+	
+	add $a0,$zero,$t6 # 1st param of swap is v (old $a0)
+	add $a1,$zero,$s1 # 2nd param of swap is j
+	j BSortSwap # call swap procedure
+ReturnBSortSwap:
+	addi $s1,$s1,-1 # j –= 1
+	j for2tst # jump to test of inner loop
+exit2: 
+	addi $t7, $t7, 1 # i += 1
+	j for1tst # jump to test of outer loop
+exit1:
+	add $v0,$zero,$t6
+	add $v1,$zero,$t5
+	jr $ra
+
+BSortSwap: 	#trocar posições!
+	addi $a1,$a1,1
+	mulu $t1, $a1, 28	# $t1 = k * 4
+	sub $t1, $a0, $t1	# $t1 = v-(k*4)(address of v[k])
+	addi $t4, $zero, 7
+	
+BSortLoopSwap:
+	lw $t0, 0($t1) 		# $t0 (temp) = v[k]
+	lw $t2, -28($t1) 		# $t2 = v[k+1]
+	sw $t2, 0($t1) 		# v[k] = $t2 (v[k+1])
+	sw $t0, -28($t1) 		# v[k+1] = $t0 (temp)
+	addi $t1,$t1,4
+	addi $t4,$t4,-1
+	bne $t4,$zero,BSortLoopSwap
+	j ReturnBSortSwap
+#--------------- BBsort --------------#
 
 Exit:
 	li $v0,17
