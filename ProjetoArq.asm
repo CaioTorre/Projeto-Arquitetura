@@ -26,6 +26,7 @@ ExibePorData:	.asciiz "Lista de abastecimentos:\n"
 
 Kms:		.asciiz " Km"
 Litros:		.asciiz " Litros"
+
 ReaisPorLitro:   .asciiz " R$/L"
 Reais:		.asciiz "R$ "
 
@@ -34,12 +35,13 @@ Barra:		.asciiz "/"
 Espaco:		.asciiz " "
 Ponto:		.asciiz "."
 FimDeLinha:	.asciiz "\n"
-
+Zero:		.asciiz "0"
 
 Ex_Qlmt:	.asciiz "Quilometragem: "
 MenuNomePreco:	.asciiz "  | Nome do Posto    | Preço Médio\n"
 .text
 main:
+
 #----------- Inicializando -----------#
 	#subi $sp, $sp, -28 
 	divu $sp, $sp, 32
@@ -50,6 +52,7 @@ main:
 	#lui $s6,0x1004
 
 	add $s6,$zero,$zero	#O ponteiro inicial será guardado em $s6
+
 #------------ Exibir Menu ------------#
 Menu:
 	li  $v0, 4
@@ -76,7 +79,7 @@ Menu:
 
 #------------ Exibir Menu ------------#	
 
-#--------- Opção Selecionada ---------#		
+#--------- Op??o Selecionada ---------#		
 	li $v0, 5
 	syscall
 	
@@ -88,6 +91,7 @@ Menu:
 	syscall
 	j  Menu
 StartOpcao:
+
 	beq $v0,2,Exclui
 	beq $v0,3,EAbastece
 	beq $v0,4,EConsumo
@@ -167,7 +171,6 @@ StoreWord:		#Nome do Posto
 	
 	slt  $t3, $t4, $t1 #t3 = 1 if first data < new data
 	bne  $t3, $zero, emptyList
-	
 	add  $t0, $s6, $zero	#Pega inicio da lista ligada
 findNext:
 	lw   $t2, 28($t0) #t2 is current->next
@@ -201,18 +204,67 @@ doneAdding:
 #------ Cadastro Abastecimento -------#		
 	
 #-------- Excluir Abstecimento -------#	
-Exclui:
-	add $t0,$fp,-64
-	sw $zero,0($t0)
-	j Menu
-	#jal RData
-	#bne $s7,$zero,ExcluiRealmente
-	#li $v0,4
-	#la $a0,SemReg
-	#syscall
-	#j Menu
-#ExcluiRealmente:
 
+	#ponteiro inicial $s6 
+	#$s7 qtd registros
+	
+	#$t1 valor da data digitado em EPOCH
+	#$t2 valor da data na lista ligada
+	#$t3 Ponteiro anterior
+	#$t4 ->prox do item excluido
+	#t5 ponteiro da lista
+	#$t6 decrementador
+	
+Exclui:
+	jal RData	
+	add $t1,$zero,$v0 # valor da EPOCH em $t1
+	
+	add $t5, $s6, $zero # Ponteiro da lista em $t5
+	add $t6, $s7, $zero # Quantidade de registros em $t6
+	beq $t6, $zero, MsgSemReg
+	
+	
+	lh $t2, 0($t5)	# Carrega a data da lista
+	la $t3, ($t5)
+	beq $t1, $t2, ExcluiPrimeiroElemento
+	addi $t6, $t6, -1
+	
+LoopProcuraData:
+	beq $t6, $zero, MsgSemReg
+	
+	addi $t5, $t5, 28 # Avança pra prosição do ponteiro
+	addi $t6, $t6, -1
+	lw $t5, 0($t5) # Proximo elento da lista
+	
+	lh $t2, 0($t5)	# Carrega a data da lista
+	beq $t1, $t2, ExcluiRealmente
+	la $t3, ($t5)
+	
+	bne $t1, $t2, LoopProcuraData
+
+MsgSemReg:	
+	li $v0, 4
+	la $a0, SemReg
+	syscall
+	j FimExclui
+
+ExcluiPrimeiroElemento:
+	sw $zero, 0($t5)
+	lw $t3, 28($t5)
+	add $s6, $t3, $zero
+	addi $s7, $s7, -1
+	j FimExclui
+			
+ExcluiRealmente:	
+	
+	sw $zero, 0($t5)
+	lw $t4, 28($t5)
+	sw $t4, 28($t3)
+	
+	addi $s7, $s7, -1	
+	
+FimExclui:
+	j Menu
 #-------- Excluir Abstecimento -------#	
 
 #--------- Exibe Abastecimento -------#	
@@ -240,6 +292,7 @@ LoopExibe:
 	
 	li $v0, 1
 	add $a0, $t7, $zero
+
 	syscall		    #exibe o indice
 	jal PrintaPonto
 	jal PrintaEspaco
@@ -248,12 +301,21 @@ LoopExibe:
 	#and $v0, $v0, 65535
 	jal EpochToDate     #pega a data e desconverte do epoc
 	
+
+	add $t0, $a0, $zero
+	jal IdentaData
+	add $a0, $t0, $zero
+
 	li $v0, 1
 	syscall             #printa dia
 	jal PrintaBarra
 	
-	li $v0, 1
 	add $a0, $a1, $zero
+	add $t0, $a1, $zero
+	jal IdentaData
+	add $a0, $t0, $zero
+	li $v0, 1
+
 	syscall             #printa mes
 	jal PrintaBarra
 	
@@ -266,6 +328,12 @@ LoopExibe:
 	addi $t5, $t5, 2
 	
 	lh $a0, 0($t5)
+
+	add $t3, $a0, $zero
+	add $t4, $a0, $zero
+	jal identacaoCombustivel
+	add $a0, $t4, $zero
+
 	li $v0, 1
 	syscall		    #printa qtd combustivel
 	
@@ -284,6 +352,12 @@ LoopExibe:
 	addi $t5, $t5, 4
 	
 	lw $a0, 0($t5)
+
+	add $t0, $a0, $zero
+	add $t1, $a0, $zero
+	jal IdentaDistancia
+	add $a0, $t1, $zero
+
 	li $v0, 1
 	syscall		   #printa distancia
 	
@@ -356,6 +430,39 @@ PrintaFimDeLinha:
 	syscall	
 	jr $ra
 
+identacaoCombustivel:
+	div $t0, $t3, 100
+	bne $t0, $zero, Identado
+	li $v0, 4
+	la $a0, Zero
+	syscall
+	mul $t3, $t3, 10	
+	
+	j identacaoCombustivel	
+ 
+Identado:
+ 	jr $ra
+ 	
+IdentaData:
+	div $t1, $t0, 10
+	bne $t1, $zero, Identadoo
+	li $v0, 4
+	la $a0, Zero
+	syscall
+Identadoo:
+	jr $ra
+	
+IdentaDistancia:
+	div $t2, $t0, 10000
+	bne $t2, $zero, Identadooo
+	li $v0, 4
+	la $a0, Zero
+	syscall
+	mul $t0, $t0, 10
+	j IdentaDistancia
+	
+Identadooo:
+	jr $ra
 #--------- Exibe Abastecimento -------#	
 
 #---------- Exibe Consumo ------------#	
@@ -508,8 +615,6 @@ AligningTextEMedio:
 	addi $t7,$t7,1
 	bne $sp,$s5,LoopPrintEMEdio
 	j Menu 
-	
-	
 #-------- Exibe Preco Medio ----------#	
 
 #------ Converte Data para EPOCH -----#
@@ -541,6 +646,7 @@ EpochToDate: #EPOCH em $v0
 	
 	jr $ra
 #------ Converte EPOCH para Data -----#
+
 #------------ Recebe data ------------#
 RData:	
 	li $v0,4	#Recebe Dia em $a0
@@ -557,7 +663,7 @@ RData:
 	li $v0,5
 	syscall
 	add $t6,$zero,$v0
-	
+
 	li $v0,4	#Recebe Ano em $a2
 	la $a0,Ins_Ano
 	syscall
@@ -632,6 +738,7 @@ _found:
 #found:	add  $v0, $t0, $zero	#return current pointer
 #	jr   $ra
 ##--------------- malloc --------------#
+
 #--------------- cmpstr --------------#
 cmpstr:	#$a0 - End. String 1, $a1 - End. String 2
 	lb $t6,0($a0)
@@ -704,6 +811,7 @@ BSortLoopSwap:
 	bne $t4,$zero,BSortLoopSwap
 	j ReturnBSortSwap
 #--------------- BBsort --------------#
+
 Exit:
 	li $v0,17
 	li $a0,0
