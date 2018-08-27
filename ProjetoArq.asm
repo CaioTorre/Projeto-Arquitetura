@@ -467,7 +467,6 @@ Identadooo:
 
 #---------- Exibe Consumo ------------#	
 EConsumo:
-#---------- Exibe Consumo ------------#
 	add $t0, $s6, $zero
 	add $t4, $zero, $zero
 	add $t2, $zero, $zero
@@ -510,6 +509,7 @@ EConsumo:
 	syscall	
 	
 	j Menu	
+#---------- Exibe Consumo ------------#
 	
 #-------- Exibe Preco Medio ----------#	
 EMedio:	#$t0 - reg. temp. para percorrer lista; $t1 - reg. para guardar string temp.; $t3 - inicio pilha; $t4 - quantidade em pilha; $t5 - temp. para receber word; $f31 - preço temp.
@@ -723,27 +723,6 @@ RData:
 	jr $t4
 #------------ Recebe data ------------#
 
-##------------- new malloc ------------# #Deprecated (null pointer == 0 implies valid positions where there shouldnt be)
-#nalloc:
-#	lui  $t0, 0x1004	#Start search at the beginning of heap
-#	add  $t7, $a0, $zero	#Get number of bytes to be reserved in a0
-#_next:	lw   $t2, 0($t0)
-#	beq  $t2, $zero, _found	#If found zeroed-out position, check for contiguous
-#	addi $t0, $t0, 4
-#	add  $t7, $a0, $zero	#Else start again at next position
-#	j _next
-#_found:
-#	addi $t7, $t7, -1	#One block down
-#	addi $t0, $t0, 4	#Check next for continuity
-#	beq  $t7, $zero, _doneAlloc
-#	#addi $t0, $t0, 4	#Check next for continuity
-#	j _next
-#_doneAlloc:
-#	mul $t6, $a0, 4		#Return to start of empty block
-#	sub $v0, $t0, $t6
-#	jr $ra
-##------------- new malloc ------------#
-
 #------------- new malloc ------------#
 nalloc:
 	lui  $t0, 0x1004	#Start search at the beginning of heap
@@ -756,30 +735,6 @@ _found:
 	#addi $t0, $t0, 4	#Check next for continuity
 	jr $ra
 #------------- new malloc ------------#
-
-##--------------- malloc --------------# #Deprecated (use nalloc instead)
-#malloc:
-#	add  $t3, $fp, $zero
-#	add  $t0, $sp, $zero
-#	#add  $t0, $sp, 32	#$t0 will move through stack
-#
-#	#slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
-#	#beq  $t2, $zero, blowup	#	then try next block
-#	
-#next:	lw   $t2, 0($t0)
-#	beq  $t2, $zero, found	#if current block is empty
-#	addi $t0, $t0, 32	#	else will check next block
-#	
-#	slt  $t2, $t0, $t3	#	check if we dont try to find an invalid position
-#	bne  $t2, $zero, next	#	then try next block
-#	
-#blowup:	addi $v0, $sp, -32	#		else just add a new position at the top of stack
-#	addi $sp, $sp, -32
-#	jr   $ra
-#
-#found:	add  $v0, $t0, $zero	#return current pointer
-#	jr   $ra
-##--------------- malloc --------------#
 
 #--------------- cmpstr --------------#
 cmpstr:	#$a0 - End. String 1, $a1 - End. String 2
@@ -800,7 +755,8 @@ cmpstrExitFalse:
 	add $v0,$zero,$zero	#Retorna 0 caso a string seja diferente
 	jr $ra	
 #--------------- cmpstr --------------#
-#--------------- BSort --------------#
+
+#--------------- BBSort --------------#
 #$a0 - inicio pilha; $a1 - n infos;
 #compare floating point number:
 #c.eq.s fs,ft (compare if fs is equal to ft)
