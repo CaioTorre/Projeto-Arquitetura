@@ -27,11 +27,13 @@ ExibePorData:	.asciiz "Lista de abastecimentos:\n"
 Kms:		.asciiz " Km"
 Litros:		.asciiz " Litros"
 
+
 Consumo:	.asciiz "Consumo médio:    "
 SemRegConsumo:	.asciiz "Não há registros que indiquem algum consumo, retornando ao menu...\n"
 KmL:		.asciiz " Km/L"
 
 ReaisPorLitro:  .asciiz " R$/L"
+
 Reais:		.asciiz "R$ "
 
 Separacao:      .asciiz " | "
