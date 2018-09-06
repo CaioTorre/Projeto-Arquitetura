@@ -525,6 +525,7 @@ EConsumo:
 	syscall
 	
 	jal PrintaFimDeLinha
+	j Menu
 	
 SemConsumo:
 	li $v0, 4
