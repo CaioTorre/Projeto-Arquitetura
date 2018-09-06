@@ -20,7 +20,8 @@ Ins_Qlmt:	.asciiz "Insira a quilometragem do carro: "
 Ins_Qntd:	.asciiz "Insira a quantidade de combustivel: "
 Ins_Prec:	.asciiz "Insira o preco por litro: "
 
-SemReg:		.asciiz "Não há registro de abastecimento, retornando ao menu...\n"
+EncontradoReg:  .asciiz "O registro foi excluido com sucesso! \n"
+SemReg:		.asciiz "Nenhum registro foi encontrado! \n"
 
 ExibePorData:	.asciiz "Lista de abastecimentos:\n"
 
@@ -254,12 +255,18 @@ MsgSemReg:
 	syscall
 	j FimExclui
 
+MsgEncontradoReg:	
+	li $v0, 4
+	la $a0, EncontradoReg
+	syscall
+	j FimExclui
+
 ExcluiPrimeiroElemento:
 	sw $zero, 0($t5)
 	lw $t3, 28($t5)
 	add $s6, $t3, $zero
 	addi $s7, $s7, -1
-	j FimExclui
+	j MsgEncontradoReg
 			
 ExcluiRealmente:	
 	
@@ -267,7 +274,8 @@ ExcluiRealmente:
 	lw $t4, 28($t5)
 	sw $t4, 28($t3)
 	
-	addi $s7, $s7, -1	
+	addi $s7, $s7, -1
+	j MsgEncontradoReg	
 	
 FimExclui:
 	j Menu
