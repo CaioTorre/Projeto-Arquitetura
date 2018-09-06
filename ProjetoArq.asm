@@ -27,7 +27,13 @@ ExibePorData:	.asciiz "Lista de abastecimentos:\n"
 Kms:		.asciiz " Km"
 Litros:		.asciiz " Litros"
 
-ReaisPorLitro:   .asciiz " R$/L"
+
+Consumo:	.asciiz "Consumo médio:    "
+SemRegConsumo:	.asciiz "Não há registros que indiquem algum consumo, retornando ao menu...\n"
+KmL:		.asciiz " Km/L"
+
+ReaisPorLitro:  .asciiz " R$/L"
+
 Reais:		.asciiz "R$ "
 
 Separacao:      .asciiz " | "
@@ -499,14 +505,32 @@ EConsumo:
 	lw  $t3, 8($t0)
 	sub $t4, $t4, $t3
 	
+	beq $t4, $zero, SemConsumo
+	
 	mtc1 $t4, $f0
   	cvt.s.w $f0, $f0
   	mtc1 $t2, $f1
   	cvt.s.w $f1, $f1
 	div.s $f12, $f0, $f1
 	
+	li $v0, 4
+	la $a0, Consumo
+	syscall
+	
 	li $v0, 2
-	syscall	
+	syscall
+	
+	li $v0, 4
+	la $a0, KmL
+	syscall
+	
+	jal PrintaFimDeLinha
+	j Menu
+	
+SemConsumo:
+	li $v0, 4
+	la $a0, SemRegConsumo
+	syscall
 	
 	j Menu	
 #---------- Exibe Consumo ------------#
